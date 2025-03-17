@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "fatfs.h"
+#include "lwip.h"
 #include "usb_host.h"
 
 /* Private includes ----------------------------------------------------------*/
@@ -141,6 +142,7 @@ int main(void)
   MX_FATFS_Init();
   MX_USB_HOST_Init();
   MX_UART5_Init();
+  MX_LWIP_Init();
   /* USER CODE BEGIN 2 */
   Audio_Player_Init(&hi2c1);
   Audio_Player_Init(&hi2c2);
@@ -161,6 +163,7 @@ int main(void)
   f_lseek(&file2,44);
 
   printf("open %d\n",res);
+  Audio_Player_Start();
 
   /* USER CODE END 2 */
 
@@ -169,11 +172,12 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-    MX_USB_HOST_Process();
+   // MX_USB_HOST_Process();
 
     /* USER CODE BEGIN 3 */
-	  Audio_Player_Start();
-	  HAL_Delay(50000);
+	  MX_LWIP_Process();
+
+	 // HAL_Delay(50000);
   }
   /* USER CODE END 3 */
 }
@@ -443,6 +447,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
   __HAL_RCC_GPIOD_CLK_ENABLE();
+  __HAL_RCC_GPIOG_CLK_ENABLE();
 
 }
 

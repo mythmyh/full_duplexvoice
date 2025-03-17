@@ -55,10 +55,10 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
+extern ETH_HandleTypeDef heth;
 extern HCD_HandleTypeDef hhcd_USB_OTG_FS;
 extern DMA_HandleTypeDef hdma_spi2_tx;
 extern DMA_HandleTypeDef hdma_spi3_tx;
-extern I2S_HandleTypeDef hi2s3;
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -230,17 +230,17 @@ void DMA1_Stream5_IRQHandler(void)
 }
 
 /**
-  * @brief This function handles SPI3 global interrupt.
+  * @brief This function handles Ethernet global interrupt.
   */
-void SPI3_IRQHandler(void)
+void ETH_IRQHandler(void)
 {
-  /* USER CODE BEGIN SPI3_IRQn 0 */
+  /* USER CODE BEGIN ETH_IRQn 0 */
 
-  /* USER CODE END SPI3_IRQn 0 */
-  HAL_I2S_IRQHandler(&hi2s3);
-  /* USER CODE BEGIN SPI3_IRQn 1 */
+  /* USER CODE END ETH_IRQn 0 */
+  HAL_ETH_IRQHandler(&heth);
+  /* USER CODE BEGIN ETH_IRQn 1 */
 
-  /* USER CODE END SPI3_IRQn 1 */
+  /* USER CODE END ETH_IRQn 1 */
 }
 
 /**
