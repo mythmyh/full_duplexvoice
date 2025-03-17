@@ -1,0 +1,14 @@
+audio_player.c:46:19:WM8978_Register_Wirter	40	static
+audio_player.c:57:6:WAV_FileInit	4	static
+audio_player.c:64:10:WAV_FileRead	24	static
+audio_player.c:85:19:HAL_I2S_Transmit_DMAEx	48	static
+audio_player.c:167:13:DMAEx_XferCpltCallback	16	static
+audio_player.c:181:13:DMAEx_XferM1CpltCallback	16	static
+audio_player.c:206:13:DMAEx_XferErrorCallback	16	static
+audio_player.c:211:6:Audio_Player_Init	8	static
+audio_player.c:227:6:Audio_Set_Volume	16	static
+audio_player.c:243:6:Audio_Player_Start	8	static
+audio_player.c:250:6:Audio_Player_Start2	8	static
+audio_player.c:258:6:Audio_Player_Pause	8	static
+audio_player.c:263:6:Audio_Player_Resume	8	static
+audio_player.c:268:6:Audio_Player_Stop	8	static
