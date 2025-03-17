@@ -18,6 +18,8 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "fatfs.h"
+#include "usb_host.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -47,6 +49,8 @@ I2S_HandleTypeDef hi2s3;
 DMA_HandleTypeDef hdma_spi2_tx;
 DMA_HandleTypeDef hdma_spi3_tx;
 
+UART_HandleTypeDef huart5;
+
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -60,12 +64,127 @@ static void MX_I2S3_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_I2C2_Init(void);
 static void MX_I2S2_Init(void);
+static void MX_UART5_Init(void);
+void MX_USB_HOST_Process(void);
+
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+#include <string.h>
+#include <stdio.h>
+
+#ifdef __GNUC__
+  /* With GCC, small printf (option LD Linker->Libraries->Small printf
+     set to 'Yes') calls __io_putchar() */
+int __io_putchar(int ch)
+#else
+int fputc(int ch, FILE *f)
+#endif /* __GNUC__ */
+{
+  /* Place your implementation of fputc here */
+  /* e.g. write a character to the UART3 and Loop until the end of transmission */
+  HAL_UART_Transmit(&huart5, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
+  return ch;
+}
+extern ApplicationTypeDef Appli_state;
+static FATFS     UsbDiskFatFs;                                 /* File system object for USB disk logical drive */
+static FIL       file;                                         /* File object */
+FRESULT   res;
+char      UsbDiskPath[4] = {0};                         /* USB Host logical drive path */
+uint32_t  byteswritten, bytesread;                      /* File write/read counts */
+static char      file_name[] = "ayimo.wav";                     /* File name */
+
+static FRESULT ETX_MSC_ProcessUsbDevice(void)
+{
+  FATFS     UsbDiskFatFs;                                 /* File system object for USB disk logical drive */
+  char      UsbDiskPath[4] = {0};                         /* USB Host logical drive path */
+  FIL       file;                                         /* File object */
+  FRESULT   res;                                          /* FatFs function common result code */
+  uint32_t  total_space, free_space;                      /* Total Space and Free Space */
+  DWORD     fre_clust;                                    /* Freee Cluster */
+  uint32_t  byteswritten, bytesread;                      /* File write/read counts */
+  uint8_t   wr_data[] = "Welcome to EmbeTronicX!!!";      /* Data buffer */
+  uint8_t   rd_data[100];                                 /* Read buffer */
+  char      file_name[] = "temp.txt";                     /* File name */
+
+  do
+  {
+    /* Register the file system object to the FatFs module */
+    res = f_mount( &UsbDiskFatFs, (TCHAR const*)UsbDiskPath, 0 );
+
+    if( res != FR_OK )
+    {
+      /* FatFs Init Error */
+      break;
+    }
+
+    /* Check the Free Space */
+    FATFS *fatFs = &UsbDiskFatFs;
+    f_getfree("", &fre_clust, &fatFs);
+    total_space = (uint32_t)((UsbDiskFatFs.n_fatent - 2) * UsbDiskFatFs.csize * 0.5);
+    free_space = (uint32_t)(fre_clust * UsbDiskFatFs.csize * 0.5);
+    printf("USB Device Total Space = %lu MB\n", total_space/1024);
+    printf("USB Device Free Space  = %lu MB\n", free_space/1024);
+
+    /* Create a new text file with write access */
+    res = f_open( &file, file_name, ( FA_CREATE_ALWAYS | FA_WRITE ) );
+    if( res != FR_OK )
+    {
+      /* File Open Error */
+      break;
+    }
+
+    /* Write the data to the text file */
+    res = f_write( &file, wr_data, sizeof(wr_data), (void *)&byteswritten );
+
+    /* Close the opened file */
+    f_close( &file );
+
+    if( res != FR_OK )
+    {
+      /* File write Error */
+      break;
+    }
+
+
+    /* Open the text file object with read access */
+    res = f_open( &file, file_name, FA_READ );
+    if( res != FR_OK )
+    {
+      /* File Open Error */
+      break;
+    }
+
+    /* Read data from the file */
+    res = f_read( &file, rd_data, sizeof(wr_data), (void *)&bytesread);
+
+    /* Close the file */
+    f_close(&file);
+
+    if(res != FR_OK)
+    {
+      /* File Read Error */
+      break;
+    }
+
+    /* Print the data */
+    printf("Read Data : %s\n", rd_data);
+
+  } while ( 0 );
+
+  /* Unmount the device */
+  f_mount(NULL, UsbDiskPath, 0);
+
+  /* Unlink the USB disk driver */
+  FATFS_UnLinkDriver(UsbDiskPath);
+
+  return res;
+}
+
+
 
 /* USER CODE END 0 */
 
@@ -105,8 +224,21 @@ int main(void)
   MX_I2C1_Init();
   MX_I2C2_Init();
   MX_I2S2_Init();
+  MX_FATFS_Init();
+  MX_USB_HOST_Init();
+  MX_UART5_Init();
   /* USER CODE BEGIN 2 */
   Audio_Player_Init();
+  //ETX_MSC_ProcessUsbDevice();
+
+  while( Appli_state !=APPLICATION_READY){
+	    MX_USB_HOST_Process();
+  }
+  res = f_mount( &UsbDiskFatFs, (TCHAR const*)UsbDiskPath, 0 );
+
+  printf("mount %d\n",res);
+  res = f_open( &file, file_name, FA_READ );
+  printf("open %d\n",res);
 
   /* USER CODE END 2 */
 
@@ -115,6 +247,7 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
+    //MX_USB_HOST_Process();
 
     /* USER CODE BEGIN 3 */
 	  Audio_Player_Start();
@@ -146,7 +279,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLM = 4;
   RCC_OscInitStruct.PLL.PLLN = 168;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-  RCC_OscInitStruct.PLL.PLLQ = 4;
+  RCC_OscInitStruct.PLL.PLLQ = 7;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -322,6 +455,39 @@ static void MX_I2S3_Init(void)
 }
 
 /**
+  * @brief UART5 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_UART5_Init(void)
+{
+
+  /* USER CODE BEGIN UART5_Init 0 */
+
+  /* USER CODE END UART5_Init 0 */
+
+  /* USER CODE BEGIN UART5_Init 1 */
+
+  /* USER CODE END UART5_Init 1 */
+  huart5.Instance = UART5;
+  huart5.Init.BaudRate = 115200;
+  huart5.Init.WordLength = UART_WORDLENGTH_8B;
+  huart5.Init.StopBits = UART_STOPBITS_1;
+  huart5.Init.Parity = UART_PARITY_NONE;
+  huart5.Init.Mode = UART_MODE_TX_RX;
+  huart5.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart5.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart5) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN UART5_Init 2 */
+
+  /* USER CODE END UART5_Init 2 */
+
+}
+
+/**
   * Enable DMA controller clock
   */
 static void MX_DMA_Init(void)
@@ -354,6 +520,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOD_CLK_ENABLE();
 
 }
 
