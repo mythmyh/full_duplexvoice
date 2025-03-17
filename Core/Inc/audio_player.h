@@ -10,7 +10,7 @@
 
 #include "main.h"
 
-void Audio_Player_Init(void);
+void Audio_Player_Init(I2C_HandleTypeDef*);
 void Audio_Player_Start(void);
 void Audio_Player_Pause(void);
 void Audio_Player_Resume(void);

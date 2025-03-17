@@ -92,10 +92,12 @@ int fputc(int ch, FILE *f)
 extern ApplicationTypeDef Appli_state;
 static FATFS     UsbDiskFatFs;                                 /* File system object for USB disk logical drive */
  FIL       file;                                         /* File object */
+ FIL       file2;
 FRESULT   res;
 char      UsbDiskPath[4] = {0};                         /* USB Host logical drive path */
 uint32_t  byteswritten, bytesread;                      /* File write/read counts */
 char      file_name[] = "jingwei.wav";                     /* File name */
+char      file_name2[] = "queen.wav";                     /* File name */
 
 static FRESULT ETX_MSC_ProcessUsbDevice(void)
 {
@@ -228,7 +230,8 @@ int main(void)
   MX_USB_HOST_Init();
   MX_UART5_Init();
   /* USER CODE BEGIN 2 */
-  Audio_Player_Init();
+  Audio_Player_Init(&hi2c1);
+  Audio_Player_Init(&hi2c2);
   //ETX_MSC_ProcessUsbDevice();
 
   while( Appli_state !=APPLICATION_READY){
@@ -238,7 +241,13 @@ int main(void)
 
   printf("mount %d\n",res);
   res = f_open( &file, file_name, FA_READ );
+
+
   f_lseek(&file,44);
+  printf("open %d\n",res);
+  res = f_open( &file2, file_name2, FA_READ );
+  f_lseek(&file2,44);
+
   printf("open %d\n",res);
 
   /* USER CODE END 2 */
