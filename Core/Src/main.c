@@ -99,94 +99,6 @@ uint32_t  byteswritten, bytesread;                      /* File write/read count
 char      file_name[] = "jingwei.wav";                     /* File name */
 char      file_name2[] = "queen.wav";                     /* File name */
 
-static FRESULT ETX_MSC_ProcessUsbDevice(void)
-{
-  FATFS     UsbDiskFatFs;                                 /* File system object for USB disk logical drive */
-  char      UsbDiskPath[4] = {0};                         /* USB Host logical drive path */
-  FIL       file;                                         /* File object */
-  FRESULT   res;                                          /* FatFs function common result code */
-  uint32_t  total_space, free_space;                      /* Total Space and Free Space */
-  DWORD     fre_clust;                                    /* Freee Cluster */
-  uint32_t  byteswritten, bytesread;                      /* File write/read counts */
-  uint8_t   wr_data[] = "Welcome to EmbeTronicX!!!";      /* Data buffer */
-  uint8_t   rd_data[100];                                 /* Read buffer */
-  char      file_name[] = "temp.txt";                     /* File name */
-
-  do
-  {
-    /* Register the file system object to the FatFs module */
-    res = f_mount( &UsbDiskFatFs, (TCHAR const*)UsbDiskPath, 0 );
-
-    if( res != FR_OK )
-    {
-      /* FatFs Init Error */
-      break;
-    }
-
-    /* Check the Free Space */
-    FATFS *fatFs = &UsbDiskFatFs;
-    f_getfree("", &fre_clust, &fatFs);
-    total_space = (uint32_t)((UsbDiskFatFs.n_fatent - 2) * UsbDiskFatFs.csize * 0.5);
-    free_space = (uint32_t)(fre_clust * UsbDiskFatFs.csize * 0.5);
-    printf("USB Device Total Space = %lu MB\n", total_space/1024);
-    printf("USB Device Free Space  = %lu MB\n", free_space/1024);
-
-    /* Create a new text file with write access */
-    res = f_open( &file, file_name, ( FA_CREATE_ALWAYS | FA_WRITE ) );
-    if( res != FR_OK )
-    {
-      /* File Open Error */
-      break;
-    }
-
-    /* Write the data to the text file */
-    res = f_write( &file, wr_data, sizeof(wr_data), (void *)&byteswritten );
-
-    /* Close the opened file */
-    f_close( &file );
-
-    if( res != FR_OK )
-    {
-      /* File write Error */
-      break;
-    }
-
-
-    /* Open the text file object with read access */
-    res = f_open( &file, file_name, FA_READ );
-    if( res != FR_OK )
-    {
-      /* File Open Error */
-      break;
-    }
-
-    /* Read data from the file */
-    res = f_read( &file, rd_data, sizeof(wr_data), (void *)&bytesread);
-
-    /* Close the file */
-    f_close(&file);
-
-    if(res != FR_OK)
-    {
-      /* File Read Error */
-      break;
-    }
-
-    /* Print the data */
-    printf("Read Data : %s\n", rd_data);
-
-  } while ( 0 );
-
-  /* Unmount the device */
-  f_mount(NULL, UsbDiskPath, 0);
-
-  /* Unlink the USB disk driver */
-  FATFS_UnLinkDriver(UsbDiskPath);
-
-  return res;
-}
-
-
 
 /* USER CODE END 0 */
 
@@ -416,7 +328,7 @@ static void MX_I2S2_Init(void)
   hi2s2.Init.Standard = I2S_STANDARD_PHILIPS;
   hi2s2.Init.DataFormat = I2S_DATAFORMAT_16B;
   hi2s2.Init.MCLKOutput = I2S_MCLKOUTPUT_ENABLE;
-  hi2s2.Init.AudioFreq = I2S_AUDIOFREQ_8K;
+  hi2s2.Init.AudioFreq = I2S_AUDIOFREQ_44K;
   hi2s2.Init.CPOL = I2S_CPOL_LOW;
   hi2s2.Init.ClockSource = I2S_CLOCK_PLL;
   hi2s2.Init.FullDuplexMode = I2S_FULLDUPLEXMODE_ENABLE;
@@ -508,7 +420,7 @@ static void MX_DMA_Init(void)
 
   /* DMA interrupt init */
   /* DMA1_Stream4_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream4_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA1_Stream4_IRQn, 2, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream4_IRQn);
   /* DMA1_Stream5_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 2, 0);

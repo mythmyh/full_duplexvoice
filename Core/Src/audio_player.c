@@ -41,8 +41,9 @@ uint8_t *Delta = NULL;
 
 static uint32_t DataLength = 0;
 static uint8_t *DataAddress = NULL;
-
+FRESULT res2;
 uint32_t bw;
+uint32_t bw2;
 int i;
 
 static void DMAEx_XferCpltCallback(struct __DMA_HandleTypeDef *hdma);
@@ -98,13 +99,13 @@ uint32_t WAV_FileRead2(uint8_t *buf, uint32_t size) {
 
 
 uint32_t WAV_FileRead3(uint8_t *buf, uint32_t size) {
-	bw = 0;
-	f_read(&file2, buf, size, (void*)&bw); //16bit音频,直接读取数据
-	//printf("aaaa %d\n",bw);
+	bw2 = 0;
+	res2=f_read(&file2, buf, size, (void*)&bw2); //16bit音频,直接读取数据
+	printf("aaaa %d %d\n",res2,bw2);
 
-	if (bw < BUFFER_SIZE) //不够数据了,补充0
+	if (bw2 < BUFFER_SIZE) //不够数据了,补充0
 	{
-		for (i = bw; i < BUFFER_SIZE - bw; i++)
+		for (i = bw; i < BUFFER_SIZE - bw2; i++)
 			buf[i] = 0;
 
 		f_close(&file2);
@@ -131,6 +132,31 @@ uint32_t WAV_FileRead(uint8_t *buf, uint32_t size) {
 
 	return Playing_End;
 }
+
+
+
+static void DMAEx_XferCpltCallback2(struct __DMA_HandleTypeDef *hdma) {
+	//if (DMA1_Stream3->CR & (1 << 19)) {
+	//if(DMA1_Stream4->CR&(1<<19)){
+	//printf("aaaa\n");
+	if (WAV_FileRead3((uint8_t*) I2S_Buf2, sizeof(I2S_Buf2)) == 0) {
+		Audio_Player_Stop();
+	}
+
+	//}
+
+}
+
+static void DMAEx_XferM1CpltCallback2(struct __DMA_HandleTypeDef *hdma) {
+
+	if (WAV_FileRead3((uint8_t*) I2S_Buf3, sizeof(I2S_Buf3)) == 0) {
+		Audio_Player_Stop();
+	}
+
+}
+
+
+
 
 HAL_StatusTypeDef HAL_I2S_Transmit_DMAEx(I2S_HandleTypeDef *hi2s,
 		uint16_t *FirstBuffer, uint16_t *SecondBuffer, uint16_t Size) {
@@ -205,25 +231,6 @@ HAL_StatusTypeDef HAL_I2S_Transmit_DMAEx(I2S_HandleTypeDef *hi2s,
 
 	__HAL_UNLOCK(hi2s);
 	return HAL_OK;
-}
-
-static void DMAEx_XferCpltCallback2(struct __DMA_HandleTypeDef *hdma) {
-	//if (DMA1_Stream3->CR & (1 << 19)) {
-	//if(DMA1_Stream4->CR&(1<<19)){
-	if (WAV_FileRead3((uint8_t*) I2S_Buf2, sizeof(I2S_Buf2)) == 0) {
-		Audio_Player_Stop();
-	}
-
-	//}
-
-}
-
-static void DMAEx_XferM1CpltCallback2(struct __DMA_HandleTypeDef *hdma) {
-
-	if (WAV_FileRead3((uint8_t*) I2S_Buf3, sizeof(I2S_Buf3)) == 0) {
-		Audio_Player_Stop();
-	}
-
 }
 
 HAL_StatusTypeDef HAL_I2S_Transmit_DMAEx2(I2S_HandleTypeDef *hi2s,
@@ -352,23 +359,15 @@ void Audio_Player_Init(I2C_HandleTypeDef*hi2c) {
 
 
 void Audio_Player_Start() {
-	WAV_FileRead2((uint8_t*) I2S_Buf0, sizeof(I2S_Buf0));
-	WAV_FileRead2((uint8_t*) I2S_Buf1, sizeof(I2S_Buf1));
+	WAV_FileRead3((uint8_t*) I2S_Buf2, sizeof(I2S_Buf0));
+	WAV_FileRead3((uint8_t*) I2S_Buf3, sizeof(I2S_Buf1));
 	HAL_I2S_Transmit_DMAEx(&USEI2S, I2S_Buf0, I2S_Buf1, BUFFER_SIZE);
 
-	//HAL_I2S_Transmit_DMAEx(&USEI2S, I2S_Buf0, I2S_Buf1, BUFFER_SIZE);
-
-}
-
-void Audio_Player_Start2(void) {
-	WAV_FileInit();
-	WAV_FileRead((uint8_t*) I2S_Buf0, sizeof(I2S_Buf0));
-	WAV_FileRead((uint8_t*) I2S_Buf1, sizeof(I2S_Buf1));
-	//HAL_I2S_Transmit_DMAEx(&USEI2S, I2S_Buf0, I2S_Buf1, BUFFER_SIZE);
 	HAL_I2S_Transmit_DMAEx2(&hi2s2, I2S_Buf2, I2S_Buf3, BUFFER_SIZE);
 
-
 }
+
+
 
 void Audio_Player_Pause(void) {
 	HAL_I2S_DMAPause(&USEI2S);
