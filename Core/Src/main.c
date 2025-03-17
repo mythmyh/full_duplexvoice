@@ -91,11 +91,11 @@ int fputc(int ch, FILE *f)
 }
 extern ApplicationTypeDef Appli_state;
 static FATFS     UsbDiskFatFs;                                 /* File system object for USB disk logical drive */
-static FIL       file;                                         /* File object */
+ FIL       file;                                         /* File object */
 FRESULT   res;
 char      UsbDiskPath[4] = {0};                         /* USB Host logical drive path */
 uint32_t  byteswritten, bytesread;                      /* File write/read counts */
-static char      file_name[] = "ayimo.wav";                     /* File name */
+char      file_name[] = "jingwei.wav";                     /* File name */
 
 static FRESULT ETX_MSC_ProcessUsbDevice(void)
 {
@@ -238,6 +238,7 @@ int main(void)
 
   printf("mount %d\n",res);
   res = f_open( &file, file_name, FA_READ );
+  f_lseek(&file,44);
   printf("open %d\n",res);
 
   /* USER CODE END 2 */
@@ -247,11 +248,11 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-    //MX_USB_HOST_Process();
+    MX_USB_HOST_Process();
 
     /* USER CODE BEGIN 3 */
 	  Audio_Player_Start();
-	  HAL_Delay(15000);
+	  HAL_Delay(50000);
   }
   /* USER CODE END 3 */
 }
@@ -440,7 +441,7 @@ static void MX_I2S3_Init(void)
   hi2s3.Init.Standard = I2S_STANDARD_PHILIPS;
   hi2s3.Init.DataFormat = I2S_DATAFORMAT_16B;
   hi2s3.Init.MCLKOutput = I2S_MCLKOUTPUT_ENABLE;
-  hi2s3.Init.AudioFreq = I2S_AUDIOFREQ_8K;
+  hi2s3.Init.AudioFreq = I2S_AUDIOFREQ_44K;
   hi2s3.Init.CPOL = I2S_CPOL_LOW;
   hi2s3.Init.ClockSource = I2S_CLOCK_PLL;
   hi2s3.Init.FullDuplexMode = I2S_FULLDUPLEXMODE_ENABLE;
@@ -501,7 +502,7 @@ static void MX_DMA_Init(void)
   HAL_NVIC_SetPriority(DMA1_Stream4_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream4_IRQn);
   /* DMA1_Stream5_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 2, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
 
 }
