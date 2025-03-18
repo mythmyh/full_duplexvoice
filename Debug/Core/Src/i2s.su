@@ -1,0 +1,11 @@
+i2s.c:30:6:I2S2_Init	24	static
+i2s.c:80:6:I2S_DMA_Enable	16	static
+i2s.c:91:9:I2S2_SampleRate_Set	40	static
+i2s.c:122:6:I2S2_TX_DMA_Init	40	static
+i2s.c:157:6:I2S2ext_RX_DMA_Init	40	static
+i2s.c:192:6:DMA1_Stream4_IRQHandler	8	static
+i2s.c:202:6:DMA1_Stream3_IRQHandler	8	static
+i2s.c:212:6:I2S_Play_Start	4	static
+i2s.c:218:6:I2S_Play_Stop	4	static
+i2s.c:224:6:I2S_Rec_Start	4	static
+i2s.c:230:6:I2S_Rec_Stop	4	static

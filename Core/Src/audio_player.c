@@ -15,7 +15,7 @@
 #define USEI2C hi2c2
 #define USEI2S hi2s3
 //#include "usb_host.h"
-#define	BUFFER_SIZE					1024
+#define	BUFFER_SIZE					512
 #define	WM8978_ADDRESS				0x1A
 #define	WM8978_WIRTE_ADDRESS		(WM8978_ADDRESS << 1 | 0)
 extern I2C_HandleTypeDef USEI2C;
@@ -27,7 +27,6 @@ extern DMA_HandleTypeDef hdma_spi2_tx;
 
 extern FIL file;
 extern FIL file2;
-uint8_t audioname[30];
 extern DMA_HandleTypeDef hdma_sdio_rx;
 extern DMA_HandleTypeDef hdma_sdio_tx;
 
@@ -46,6 +45,33 @@ uint32_t bw;
 uint32_t bw2;
 int i;
 
+
+static uint16_t WM8978_REGVAL_TBL[58]=
+{
+	0X0000,0X0000,0X0000,0X0000,0X0050,0X0000,0X0140,0X0000,
+	0X0000,0X0000,0X0000,0X00FF,0X00FF,0X0000,0X0100,0X00FF,
+	0X00FF,0X0000,0X012C,0X002C,0X002C,0X002C,0X002C,0X0000,
+	0X0032,0X0000,0X0000,0X0000,0X0000,0X0000,0X0000,0X0000,
+	0X0038,0X000B,0X0032,0X0000,0X0008,0X000C,0X0093,0X00E9,
+	0X0000,0X0000,0X0000,0X0000,0X0003,0X0010,0X0010,0X0100,
+	0X0100,0X0002,0X0001,0X0001,0X0039,0X0039,0X0039,0X0039,
+	0X0001,0X0001
+};
+
+uint16_t WM8978_Read_Reg(uint8_t reg)
+{
+	return WM8978_REGVAL_TBL[reg];
+}
+HAL_StatusTypeDef WM8978_Register_Wirter2(uint8_t reg_addr, uint16_t data)
+{
+	uint8_t pData[10] =	{ 0 };
+
+	pData[0] = (reg_addr << 1) | ((data >> 8) & 0x01);
+	pData[1] = data & 0xFF;
+	WM8978_REGVAL_TBL[reg_addr]=data;	//保存寄存器值到本地
+
+	return HAL_I2C_Master_Transmit(&hi2c1, WM8978_WIRTE_ADDRESS, pData, 2, 1000);
+}
 static void DMAEx_XferCpltCallback(struct __DMA_HandleTypeDef *hdma);
 static void DMAEx_XferM1CpltCallback(struct __DMA_HandleTypeDef *hdma);
 static void DMAEx_XferErrorCallback(struct __DMA_HandleTypeDef *hdma);
@@ -71,7 +97,30 @@ HAL_StatusTypeDef WM8978_Register_Wirter(I2C_HandleTypeDef *hi2c,uint8_t reg_add
 
 	return HAL_I2C_Master_Transmit(hi2c,WM8978_WIRTE_ADDRESS, pData, 2, 1000);
 }
+void WM8978_Output_Cfg(uint8_t dacen,uint8_t bpsen)
+{
+	uint16_t regval=0;
+	if(dacen)regval|=1<<0;	//DAC脢盲鲁枚脢鹿脛脺
+	if(bpsen)
+	{
+		regval|=1<<1;		//BYPASS脢鹿脛脺
+		regval|=5<<2;		//0dB脭枚脪忙
+	}
+	WM8978_Register_Wirter2(50,regval);//R50脡猫脰脙
+	WM8978_Register_Wirter2(51,regval);//R51脡猫脰脙
+}
 
+void WM8978_AUX_Gain(uint8_t gain)
+{
+	uint16_t regval;
+	gain&=0X07;
+	regval=WM8978_Read_Reg(47);//读取R47
+	regval&=~(7<<0);			//清除原来的设置
+	WM8978_Register_Wirter2(47,regval|gain<<0);//设置R47
+	regval=WM8978_Read_Reg(48);	//读取R48
+	regval&=~(7<<0);			//清除原来的设置
+	WM8978_Register_Wirter2(48,regval|gain<<0);//设置R48
+}
 
 
 
@@ -82,7 +131,7 @@ void WAV_FileInit(void) {
 uint32_t WAV_FileRead2(uint8_t *buf, uint32_t size) {
 	bw = 0;
 	f_read(&file, buf, size, (void*)&bw); //16bit音频,直接读取数据
-	//printf("aaaa %d\n",bw);
+	printf("aaaa %d\n",bw);
 
 	if (bw < BUFFER_SIZE) //不够数据了,补充0
 	{
@@ -363,10 +412,87 @@ void Audio_Player_Start() {
 	WAV_FileRead3((uint8_t*) I2S_Buf3, sizeof(I2S_Buf1));
 	HAL_I2S_Transmit_DMAEx(&USEI2S, I2S_Buf0, I2S_Buf1, BUFFER_SIZE);
 
-	HAL_I2S_Transmit_DMAEx2(&hi2s2, I2S_Buf2, I2S_Buf3, BUFFER_SIZE);
 
+	//HAL_I2S_Transmit_DMAEx2(&hi2s2, I2S_Buf2, I2S_Buf3, BUFFER_SIZE);
 }
 
+
+void WM8978_HPvol_Set(uint8_t voll,uint8_t volr)
+{
+	voll&=0X3F;
+	volr&=0X3F;//脧脼露篓路露脦搂
+	if(voll==0)voll|=1<<6;//脪么脕驴脦陋0脢卤,脰卤陆脫mute
+	if(volr==0)volr|=1<<6;//脪么脕驴脦陋0脢卤,脰卤陆脫mute
+	WM8978_Register_Wirter2(52,voll);			//R52,露煤禄煤脳贸脡霉碌脌脪么脕驴脡猫脰脙
+	WM8978_Register_Wirter2(53,volr|(1<<8));	//R53,露煤禄煤脫脪脡霉碌脌脪么脕驴脡猫脰脙,脥卢虏陆赂眉脨脗(HPVU=1)
+}
+
+
+
+void WM8978_SPKvol_Set(uint8_t volx)
+{
+	volx&=0X3F;//脧脼露篓路露脦搂
+	if(volx==0)volx|=1<<6;//脪么脕驴脦陋0脢卤,脰卤陆脫mute
+	WM8978_Register_Wirter2(54,volx);			//R54,脌庐掳脠脳贸脡霉碌脌脪么脕驴脡猫脰脙
+	WM8978_Register_Wirter2(55,volx|(1<<8));	//R55,脌庐掳脠脫脪脡霉碌脌脪么脕驴脡猫脰脙,脥卢虏陆赂眉脨脗(SPKVU=1)
+}
+
+void WM8978_ADDA_Cfg(uint8_t dacen,uint8_t adcen)
+{
+	uint16_t regval;
+	regval=WM8978_Read_Reg(3);	//读取R3
+	if(dacen)regval|=3<<0;		//R3最低2个位设置为1,开启DACR&DACL
+	else regval&=~(3<<0);		//R3最低2个位清零,关闭DACR&DACL.
+	WM8978_Register_Wirter2(3,regval);	//设置R3
+	regval=WM8978_Read_Reg(2);	//读取R2
+	if(adcen)regval|=3<<0;		//R2最低2个位设置为1,开启ADCR&ADCL
+	else regval&=~(3<<0);		//R2最低2个位清零,关闭ADCR&ADCL.
+	WM8978_Register_Wirter2(2,regval);	//设置R2
+}
+
+void WM8978_LINEIN_Gain(uint8_t gain)
+{
+	uint16_t regval;
+	gain&=0X07;
+	regval=WM8978_Read_Reg(47);	//露脕脠隆R47
+	regval&=~(7<<4);			//脟氓鲁媒脭颅脌麓碌脛脡猫脰脙
+	WM8978_Register_Wirter2(47,regval|gain<<4);//脡猫脰脙R47
+	regval=WM8978_Read_Reg(48);	//露脕脠隆R48
+	regval&=~(7<<4);			//脟氓鲁媒脭颅脌麓碌脛脡猫脰脙
+	WM8978_Register_Wirter2(48,regval|gain<<4);//脡猫脰脙R48
+}
+
+void WM8978_Input_Cfg(uint8_t micen,uint8_t lineinen,uint8_t auxen)
+{
+	uint16_t regval;
+	regval=WM8978_Read_Reg(2);	//读取R2
+	if(micen)regval|=3<<2;		//开启INPPGAENR,INPPGAENL(MIC的PGA放大)
+	else regval&=~(3<<2);		//关闭INPPGAENR,INPPGAENL.
+ 	WM8978_Register_Wirter2(2,regval);	//设置R2
+
+	regval=WM8978_Read_Reg(44);	//读取R44
+	if(micen)regval|=3<<4|3<<0;	//开启LIN2INPPGA,LIP2INPGA,RIN2INPPGA,RIP2INPGA.
+	else regval&=~(3<<4|3<<0);	//关闭LIN2INPPGA,LIP2INPGA,RIN2INPPGA,RIP2INPGA.
+	WM8978_Register_Wirter2(44,regval);//设置R44
+
+	if(lineinen)WM8978_LINEIN_Gain(5);//LINE IN 0dB增益
+	else WM8978_LINEIN_Gain(0);		//关闭LINE IN
+	if(auxen)WM8978_AUX_Gain(7);//AUX 6dB增益
+	else WM8978_AUX_Gain(0);	//关闭AUX输入
+}
+
+void WM8978_MIC_Gain(uint8_t gain)
+{
+	gain&=0X3F;
+	WM8978_Register_Wirter2(45,gain);		//R45,脳贸脥篓碌脌PGA脡猫脰脙
+	WM8978_Register_Wirter2(46,gain|1<<8);	//R46,脫脪脥篓碌脌PGA脡猫脰脙
+}
+void WM8978_I2S_Cfg(uint8_t fmt,uint8_t len)
+{
+	fmt&=0X03;
+	len&=0X03;//限定范围
+	WM8978_Register_Wirter2(4,(fmt<<3)|(len<<5));	//R4,WM8978工作模式设置
+}
 
 
 void Audio_Player_Pause(void) {
