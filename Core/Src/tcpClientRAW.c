@@ -62,7 +62,7 @@
 #include "lwip/tcp.h"
 #include <math.h>
 #define BUFFSIZE 970
-long a1=0,b1=0;
+long a1 = 0, b1 = 0;
 #define I2S_LEN 2
 #define ARRLEN (1000/I2S_LEN/2)
 #define STEP  (I2S_LEN*2)
@@ -80,13 +80,13 @@ uint32_t bytesread;
 //uint32_t dcmi_data_buff[16000] = { 0 };
 //11328
 
-typedef  struct {
+typedef struct {
 	uint32_t ChunkID;		   	//chunk id;ÕâÀï¹Ì¶¨Îª"RIFF",¼´0X46464952
 	uint32_t ChunkSize;		   	//¼¯ºÏ´óÐ¡;ÎÄ¼þ×Ü´óÐ¡-8
 	uint32_t Format;	   			//¸ñÊ½;WAVE,¼´0X45564157
 } ChunkRIFF;
 //fmt¿é
-typedef  struct {
+typedef struct {
 	uint32_t ChunkID;		   	//chunk id;ÕâÀï¹Ì¶¨Îª"fmt ",¼´0X20746D66
 	uint32_t ChunkSize;		   	//×Ó¼¯ºÏ´óÐ¡(²»°üÀ¨IDºÍSize);ÕâÀïÎª:20.
 	uint16_t AudioFormat;	  	//ÒôÆµ¸ñÊ½;0X01,±íÊ¾ÏßÐÔPCM;0X11±íÊ¾IMA ADPCM
@@ -98,23 +98,23 @@ typedef  struct {
 //	uint16_t ByteExtraData;		//¸½¼ÓµÄÊý¾Ý×Ö½Ú;2¸ö; ÏßÐÔPCM,Ã»ÓÐÕâ¸ö²ÎÊý
 } ChunkFMT;
 //fact¿é
-typedef  struct {
+typedef struct {
 	uint32_t ChunkID;		   	//chunk id;ÕâÀï¹Ì¶¨Îª"fact",¼´0X74636166;
 	uint32_t ChunkSize;		   	//×Ó¼¯ºÏ´óÐ¡(²»°üÀ¨IDºÍSize);ÕâÀïÎª:4.
 	uint32_t NumOfSamples;	  	//²ÉÑùµÄÊýÁ¿;
 } ChunkFACT;
 //LIST¿é
-typedef  struct {
+typedef struct {
 	uint32_t ChunkID;		   	//chunk id;ÕâÀï¹Ì¶¨Îª"LIST",¼´0X74636166;
 	uint32_t ChunkSize;		   	//×Ó¼¯ºÏ´óÐ¡(²»°üÀ¨IDºÍSize);ÕâÀïÎª:4.
 } ChunkLIST;
 
 //data¿é
-typedef  struct {
+typedef struct {
 	uint32_t ChunkID;		   	//chunk id;ÕâÀï¹Ì¶¨Îª"data",¼´0X5453494C
 	uint32_t ChunkSize;		   	//×Ó¼¯ºÏ´óÐ¡(²»°üÀ¨IDºÍSize)
 } ChunkDATA;
-typedef  struct {
+typedef struct {
 	ChunkRIFF riff;	//riff¿é
 	ChunkFMT fmt;  	//fmt¿é
 //	ChunkFACT fact;	//fact¿é ÏßÐÔPCM,Ã»ÓÐÕâ¸ö½á¹¹Ìå
@@ -152,8 +152,7 @@ static err_t tcp_client_sent(void *arg, struct tcp_pcb *tpcb, u16_t len);
 
 /* A Function to send the data to the server */
 static void tcp_client_send(struct tcp_pcb *tpcb, struct tcp_client_struct *es);
-static void tcp_client_send2(struct tcp_pcb *tpcb, uint8_t*ptr);
-
+static void tcp_client_send2(struct tcp_pcb *tpcb, uint8_t *ptr);
 
 /* Function to close the connection */
 static void tcp_client_connection_close(struct tcp_pcb *tpcb,
@@ -175,22 +174,22 @@ volatile int buff2_can_send = 0;
 static struct tcp_client_struct *esTx = 0;
 static struct tcp_pcb *pcbTx = 0;
 int numarr[2];
-volatile int server_index=0;
-int current_index=0;
-int current_end=10;
+volatile int server_index = 0;
+int current_index = 0;
+int current_end = 10;
 int server_direction = 1;
 extern int direction;
 volatile int record_index = 0;
 int record_direction = 1;
-uint8_t i2srecbuf1[BUFFSIZE*10];
- uint16_t i2splaybuf[2] = { 0X0000, 0X0000 };
-uint8_t i2srecbuf2[BUFFSIZE*10];
-//uint8_t wavsram[1024000] __attribute__((section(".sram")));
-extern uint8_t wavsram[1024000];
-
+uint8_t i2srecbuf1[BUFFSIZE * 4];
+uint16_t i2splaybuf[2] = { 0X0000, 0X0000 };
+uint8_t i2srecbuf2[BUFFSIZE * 4];
+uint8_t recvsram[1024000] __attribute__((section(".sram")));
+extern uint8_t wavsram[11640];
 //uint8_t wavsram[970 * 21];
+extern int wav_index;
 extern int start;
-int start=0;
+int start = 0;
 FRESULT res2; /* FatFs function common result code */
 uint32_t bytesread;
 uint32_t write;
@@ -200,18 +199,17 @@ FIL file;
 FIL wavfile;
 char UsbDiskPath2[4] = { 0 };
 void rec_i2s_dma_rx_callback(void) {
-	b1+=10;
+	b1 += 10;
 	if (DMA1_Stream3->CR & (1 << 19)) {
-		memcpy(wavsram + BUFFSIZE * record_index*10, i2srecbuf1,
+		memcpy(wavsram + BUFFSIZE * record_index * 4, i2srecbuf1,
 				sizeof(i2srecbuf1));
 	} else {
-		memcpy(wavsram + BUFFSIZE* record_index*10, i2srecbuf2,
+		memcpy(wavsram + BUFFSIZE * record_index * 4, i2srecbuf2,
 				sizeof(i2srecbuf2));
 	}
 	record_index += 1;
-
-	if (record_index >= 100)
-		record_index=0;
+	if (record_index >= 2)
+		record_index = 0;
 
 }
 
@@ -267,14 +265,13 @@ static void tcp_err2(void *arg, err_t err) {
 void send_poolsize(int index) {
 	esTx->p = pbuf_alloc(PBUF_RAW, BUFFSIZE, PBUF_POOL);
 	if (esTx->p != NULL) {
-	//	pbuf_take(esTx->p, wavsram, BUFFSIZE);
+		//	pbuf_take(esTx->p, wavsram, BUFFSIZE);
 		pbuf_take(esTx->p, wavsram + BUFFSIZE * index, BUFFSIZE);
 		tcp_client_send(pcbTx, esTx);
 		pbuf_free(esTx->p);
 	}
 
 	//all_index += 1;
-
 
 //	if (DMA1_Stream3->CR & (1 << 19)) {
 //
@@ -314,7 +311,6 @@ void recoder_wav_init(__WaveHeader* wavhead) //³õÊ¼»¯WAVÍ·
  3. start communicating
  */
 
-
 void tcp_client_init(void) {
 	/* 1. create new tcp pcb */
 	struct tcp_pcb *tpcb;
@@ -323,7 +319,7 @@ void tcp_client_init(void) {
 
 	/* 2. Connect to the server */
 	ip_addr_t destIPADDR;
-	IP_ADDR4(&destIPADDR, 192, 168, 1,7);
+	IP_ADDR4(&destIPADDR, 192, 168, 1, 7);
 	//while(ok!= ERR_OK)
 
 	tcp_connect(tpcb, &destIPADDR, 12345, tcp_client_connected);
@@ -335,7 +331,7 @@ void tcp_client_init(void) {
 	I2S2_SampleRate_Set(16000);	//设置采样�???????
 	I2S2_TX_DMA_Init((uint8_t*) &i2splaybuf[0], (uint8_t*) &i2splaybuf[1], 1); //配置TX DMA
 	DMA1_Stream4->CR &= ~(1 << 4);	//关闭传输完成中断(这里不用中断送数�???????)
-	I2S2ext_RX_DMA_Init(i2srecbuf1, i2srecbuf2, BUFFSIZE*5); 		//配置RX DMA
+	I2S2ext_RX_DMA_Init(i2srecbuf1, i2srecbuf2, BUFFSIZE * 2); 		//配置RX DMA
 	i2s_rx_callback = rec_i2s_dma_rx_callback;
 	I2S_Play_Start();
 	I2S_Rec_Start();
@@ -394,6 +390,8 @@ static err_t tcp_client_connected(void *arg, struct tcp_pcb *newpcb, err_t err) 
 		tcp_sent(newpcb, tcp_client_sent);
 		/* handle the TCP data */
 		tcp_client_handle(newpcb, es);
+		 Audio_Player_Start();
+
 
 		ret_err = ERR_OK;
 	} else {
@@ -450,35 +448,38 @@ static err_t tcp_client_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p,
 //    tcp_sent(tpcb, tcp_client_sent);
 		//printf("ldld %d\n",resend_no);
 		//printf("1111------->\n");
+		//f_read(&wavfile, wavsram,BUFFSIZE,(void *)&write);
 
-    	//f_read(&wavfile, wavsram,BUFFSIZE,(void *)&write);
-
-
-			while(a1>b1){
-				HAL_Delay(10);
-			}
-
-	//	printf("server_index %d record%d\n",server_index, record_index);
-		send_poolsize(current_index);
+		if(server_index>=1000){
+			server_index=0;
+		}
+		memcpy(recvsram+server_index*970,p->payload,p->tot_len);
 		server_index+=1;
-		a1+=1;
-		if (server_index >= 1000)
-			server_index = 0;
-		current_index+=1;
-		if(current_index==current_end){
-			printf("====\n");
 
-			if(record_index==0){
-				current_index=99*10;
-								current_end=current_index+10;
-			}else{
-				current_index=(record_index-1)*10;
-				current_end=current_index+10;
-				printf("====%d,%d,%d\n",current_index,current_end,record_index);
+//		while (a1 > b1) {
+//			HAL_Delay(10);
+//		}
+
+//		while(server_index-wav_index>6){
+//		HAL_Delay(5);
+//		}
+
+
+		send_poolsize(current_index);
+		a1 += 1;
+		current_index += 1;
+		if (current_index == current_end) {
+			if (record_index == 0) {
+				current_index = 8;
+				current_end = current_index + 4;
+			} else {
+				current_index = (record_index - 1) * 4;
+				current_end = current_index + 4;
+				printf("====%d,%d,%d\n", current_index, current_end,
+						record_index);
 			}
 
-
-			}
+		}
 
 //		if((server_index>1000)||(server_index<0)){
 //
@@ -574,8 +575,7 @@ static void tcp_client_send(struct tcp_pcb *tpcb, struct tcp_client_struct *es) 
 
 }
 
-
-static void tcp_client_send2(struct tcp_pcb *tpcb, uint8_t*ptr) {
+static void tcp_client_send2(struct tcp_pcb *tpcb, uint8_t *ptr) {
 
 	/* get pointer on pbuf from es structure */
 

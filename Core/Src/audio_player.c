@@ -44,8 +44,9 @@ FRESULT res2;
 uint32_t bw;
 uint32_t bw2;
 int i;
+int wav_index=0;
 
-
+extern uint8_t recvsram[1024000];
 static uint16_t WM8978_REGVAL_TBL[58]=
 {
 	0X0000,0X0000,0X0000,0X0000,0X0050,0X0000,0X0140,0X0000,
@@ -57,7 +58,7 @@ static uint16_t WM8978_REGVAL_TBL[58]=
 	0X0100,0X0002,0X0001,0X0001,0X0039,0X0039,0X0039,0X0039,
 	0X0001,0X0001
 };
-
+//extern int wav_end;
 uint16_t WM8978_Read_Reg(uint8_t reg)
 {
 	return WM8978_REGVAL_TBL[reg];
@@ -128,22 +129,35 @@ void WAV_FileInit(void) {
 	DataLength = sizeof(data) - 0x2c;
 	DataAddress = (uint8_t*) (data + 0x2c);
 }
+//uint32_t WAV_FileRead2(uint8_t *buf, uint32_t size) {
+//	bw = 0;
+//	f_read(&file, buf, size, (void*)&bw); //16bit音频,直接读取数据
+//	printf("aaaa %d\n",bw);
+//
+//	if (bw < BUFFER_SIZE) //不够数据了,补充0
+//	{
+//		for (i = bw; i < BUFFER_SIZE - bw; i++)
+//			buf[i] = 0;
+//
+//		f_close(&file);
+//
+//		return 0;
+//
+//	}
+//	return 1;
+//}
+
+
+
+
 uint32_t WAV_FileRead2(uint8_t *buf, uint32_t size) {
-	bw = 0;
-	f_read(&file, buf, size, (void*)&bw); //16bit音频,直接读取数据
-	printf("aaaa %d\n",bw);
-
-	if (bw < BUFFER_SIZE) //不够数据了,补充0
-	{
-		for (i = bw; i < BUFFER_SIZE - bw; i++)
-			buf[i] = 0;
-
-		f_close(&file);
-
-		return 0;
-
-	}
-	return 1;
+	memcpy(buf, recvsram+(wav_index*size), size);
+			wav_index+=1;
+//			if(wav_end){
+//				return 0;
+//			}
+			if(wav_index>=1000)wav_index=0;
+			return 1;
 }
 
 
