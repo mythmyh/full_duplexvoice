@@ -15,7 +15,7 @@
 #define USEI2C hi2c2
 #define USEI2S hi2s3
 //#include "usb_host.h"
-#define	BUFFER_SIZE					512
+#define	BUFFER_SIZE					485
 #define	WM8978_ADDRESS				0x1A
 #define	WM8978_WIRTE_ADDRESS		(WM8978_ADDRESS << 1 | 0)
 extern I2C_HandleTypeDef USEI2C;
@@ -45,6 +45,10 @@ uint32_t bw;
 uint32_t bw2;
 int i;
 int wav_index=0;
+extern int server_index;
+
+extern int compensation;
+extern int play_index;
 
 extern uint8_t recvsram[1024000];
 static uint16_t WM8978_REGVAL_TBL[58]=
@@ -58,7 +62,7 @@ static uint16_t WM8978_REGVAL_TBL[58]=
 	0X0100,0X0002,0X0001,0X0001,0X0039,0X0039,0X0039,0X0039,
 	0X0001,0X0001
 };
-//extern int wav_end;
+
 uint16_t WM8978_Read_Reg(uint8_t reg)
 {
 	return WM8978_REGVAL_TBL[reg];
@@ -151,11 +155,17 @@ void WAV_FileInit(void) {
 
 
 uint32_t WAV_FileRead2(uint8_t *buf, uint32_t size) {
+
+
+//	printf("%d %d\n",server_index,wav_index);
+//	wav_index=server_index-=1;
+//	if(server_index==0)wav_index=999;
+//
+//	memcpy(buf, recvsram+(wav_index*size), size);
+	//printf("%d %d\n",server_index,wav_index);
 	memcpy(buf, recvsram+(wav_index*size), size);
 			wav_index+=1;
-//			if(wav_end){
-//				return 0;
-//			}
+			play_index+=1;
 			if(wav_index>=1000)wav_index=0;
 			return 1;
 }
@@ -402,28 +412,52 @@ static void DMAEx_XferErrorCallback(struct __DMA_HandleTypeDef *hdma) {
 }
 
 void Audio_Player_Init(I2C_HandleTypeDef*hi2c) {
+//loud
+//	WM8978_Register_Wirter(hi2c,0, 0);
+//		WM8978_Register_Wirter(hi2c,1,0X1B);	//R1,MICEN脡猫脰脙脦陋1(MIC脢鹿脛脺),BIASEN脡猫脰脙脦陋1(脛拢脛芒脝梅鹿陇脳梅),VMIDSEL[1:0]脡猫脰脙脦陋:11(5K)
+//		WM8978_Register_Wirter(hi2c,2,0X1B0);	//R2,ROUT1,LOUT1脢盲鲁枚脢鹿脛脺(露煤禄煤驴脡脪脭鹿陇脳梅),BOOSTENR,BOOSTENL脢鹿脛脺
+//		WM8978_Register_Wirter(hi2c,3,0X6C);	//R3,LOUT2,ROUT2脢盲鲁枚脢鹿脛脺(脌庐掳脠鹿陇脳梅),RMIX,LMIX脢鹿脛脺
+//		WM8978_Register_Wirter(hi2c,3, 0x7F);
+//		WM8978_Register_Wirter(hi2c,4, 0x10);
+//		WM8978_Register_Wirter(hi2c,6,0);		//R6,MCLK脫脡脥芒虏驴脤谩鹿漏
+//		WM8978_Register_Wirter(hi2c,43,1<<4);	//R43,INVROUT2路麓脧貌,脟媒露炉脌庐掳脠
+//		WM8978_Register_Wirter(hi2c,47,1<<8);	//R47脡猫脰脙,PGABOOSTL,脳贸脥篓碌脌MIC禄帽碌脙20卤露脭枚脪忙
+//		WM8978_Register_Wirter(hi2c,48,1<<8);	//R48脡猫脰脙,PGABOOSTR,脫脪脥篓碌脌MIC禄帽碌脙20卤露脭枚脪忙
+//		WM8978_Register_Wirter(hi2c,49,1<<1);	//R49,TSDEN,驴陋脝么鹿媒脠脠卤拢禄陇
+//		WM8978_Register_Wirter(hi2c,10,1<<3);	//R10,SOFTMUTE鹿脴卤脮,128x虏脡脩霉,脳卯录脩SNR
+//		WM8978_Register_Wirter(hi2c,14,1<<3);	//R14,AD
 
-	WM8978_Register_Wirter(hi2c,0, 0);
-		WM8978_Register_Wirter(hi2c,1,0X1B);	//R1,MICEN脡猫脰脙脦陋1(MIC脢鹿脛脺),BIASEN脡猫脰脙脦陋1(脛拢脛芒脝梅鹿陇脳梅),VMIDSEL[1:0]脡猫脰脙脦陋:11(5K)
-		WM8978_Register_Wirter(hi2c,2,0X1B0);	//R2,ROUT1,LOUT1脢盲鲁枚脢鹿脛脺(露煤禄煤驴脡脪脭鹿陇脳梅),BOOSTENR,BOOSTENL脢鹿脛脺
-		WM8978_Register_Wirter(hi2c,3,0X6C);	//R3,LOUT2,ROUT2脢盲鲁枚脢鹿脛脺(脌庐掳脠鹿陇脳梅),RMIX,LMIX脢鹿脛脺
-		WM8978_Register_Wirter(hi2c,3, 0x7F);
-		WM8978_Register_Wirter(hi2c,4, 0x10);
-		WM8978_Register_Wirter(hi2c,6,0);		//R6,MCLK脫脡脥芒虏驴脤谩鹿漏
-		WM8978_Register_Wirter(hi2c,43,1<<4);	//R43,INVROUT2路麓脧貌,脟媒露炉脌庐掳脠
-		WM8978_Register_Wirter(hi2c,47,1<<8);	//R47脡猫脰脙,PGABOOSTL,脳贸脥篓碌脌MIC禄帽碌脙20卤露脭枚脪忙
-		WM8978_Register_Wirter(hi2c,48,1<<8);	//R48脡猫脰脙,PGABOOSTR,脫脪脥篓碌脌MIC禄帽碌脙20卤露脭枚脪忙
-		WM8978_Register_Wirter(hi2c,49,1<<1);	//R49,TSDEN,驴陋脝么鹿媒脠脠卤拢禄陇
-		WM8978_Register_Wirter(hi2c,10,1<<3);	//R10,SOFTMUTE鹿脴卤脮,128x虏脡脩霉,脳卯录脩SNR
-		WM8978_Register_Wirter(hi2c,14,1<<3);	//R14,AD
+
+//weak voice than above
+		WM8978_Register_Wirter(hi2c,0, 0);
+			WM8978_Register_Wirter(hi2c,1, 0x0F);
+			WM8978_Register_Wirter(hi2c,3, 0x7F);
+			WM8978_Register_Wirter(hi2c,4, 0x10);
+			WM8978_Register_Wirter(hi2c,6, 0);
+			WM8978_Register_Wirter(hi2c,10, 0x08);
+			WM8978_Register_Wirter(hi2c,43, 0x10);
+			WM8978_Register_Wirter(hi2c,54, 50);
+			WM8978_Register_Wirter(hi2c,55, 50 | (1 << 8));
+
+
+
+
+
+
+
 
 }
 
 
 
+
+
+
+
+
 void Audio_Player_Start() {
-	WAV_FileRead3((uint8_t*) I2S_Buf2, sizeof(I2S_Buf0));
-	WAV_FileRead3((uint8_t*) I2S_Buf3, sizeof(I2S_Buf1));
+	//WAV_FileRead3((uint8_t*) I2S_Buf2, sizeof(I2S_Buf0));
+	//WAV_FileRead3((uint8_t*) I2S_Buf3, sizeof(I2S_Buf1));
 	HAL_I2S_Transmit_DMAEx(&USEI2S, I2S_Buf0, I2S_Buf1, BUFFER_SIZE);
 
 

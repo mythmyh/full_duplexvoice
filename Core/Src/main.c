@@ -167,31 +167,25 @@ int main(void)
 
 	WM8978_HPvol_Set(40, 40);	//耳机音量设置
 	WM8978_SPKvol_Set(50);	//喇叭音量设置
-  	WM8978_ADDA_Cfg(0, 1);		//�????????????????????????????????启ADC
-  	WM8978_Input_Cfg(1, 1, 0);	//�????????????????????????????????启输入�?�道(MIC&LINE IN)
-  	WM8978_Output_Cfg(0, 1);		//�????????????????????????????????启BYPASS输出
+  	WM8978_ADDA_Cfg(0, 1);		//�????????????????????????????????????启ADC
+  	WM8978_Input_Cfg(1, 1, 0);	//�????????????????????????????????????启输入�?�道(MIC&LINE IN)
+  	WM8978_Output_Cfg(0, 1);		//�????????????????????????????????????启BYPASS输出
   	WM8978_MIC_Gain(46);		//MIC增益设置
   	WM8978_I2S_Cfg(2, 0);//
   Audio_Player_Init(&hi2c2);
   //ETX_MSC_ProcessUsbDevice();
 
-
-
-
   while( Appli_state !=APPLICATION_READY){
 	    MX_USB_HOST_Process();
   }
-  res = f_mount( &UsbDiskFatFs, (TCHAR const*)UsbDiskPath, 0 );
-
-  printf("mount %d\n",res);
-  res = f_open( &file, file_name, FA_READ );
-
-
-  f_lseek(&file,44);
-  printf("open %d\n",res);
-  res = f_open( &file2, file_name2, FA_READ );
-  f_lseek(&file2,44);
-  printf("open %d\n",res);
+//  res = f_mount( &UsbDiskFatFs, (TCHAR const*)UsbDiskPath, 0 );
+//  printf("mount %d\n",res);
+//  res = f_open( &file, file_name, FA_READ );
+//  f_lseek(&file,44);
+//  printf("open %d\n",res);
+//  res = f_open( &file2, file_name2, FA_READ );
+//  f_lseek(&file2,44);
+//  printf("open %d\n",res);
   tcp_client_init();
 
   /* USER CODE END 2 */
@@ -201,7 +195,7 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-   // MX_USB_HOST_Process();
+  //  MX_USB_HOST_Process();
 
     /* USER CODE BEGIN 3 */
 	  MX_LWIP_Process();
@@ -395,7 +389,7 @@ static void MX_I2S3_Init(void)
   hi2s3.Init.Standard = I2S_STANDARD_PHILIPS;
   hi2s3.Init.DataFormat = I2S_DATAFORMAT_16B;
   hi2s3.Init.MCLKOutput = I2S_MCLKOUTPUT_ENABLE;
-  hi2s3.Init.AudioFreq = I2S_AUDIOFREQ_44K;
+  hi2s3.Init.AudioFreq = I2S_AUDIOFREQ_16K;
   hi2s3.Init.CPOL = I2S_CPOL_LOW;
   hi2s3.Init.ClockSource = I2S_CLOCK_PLL;
   hi2s3.Init.FullDuplexMode = I2S_FULLDUPLEXMODE_ENABLE;

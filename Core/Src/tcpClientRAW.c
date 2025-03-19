@@ -62,6 +62,8 @@
 #include "lwip/tcp.h"
 #include <math.h>
 #define BUFFSIZE 970
+
+int recv_index = 0;
 long a1 = 0, b1 = 0;
 #define I2S_LEN 2
 #define ARRLEN (1000/I2S_LEN/2)
@@ -195,11 +197,16 @@ uint32_t bytesread;
 uint32_t write;
 FATFS UsbDiskFatFs2;
 int all_index = 0;
+int first_pack = 1;
 FIL file;
 FIL wavfile;
+int compensation = 0;
+int play_index = 0;
 char UsbDiskPath2[4] = { 0 };
 void rec_i2s_dma_rx_callback(void) {
-	b1 += 10;
+
+	printf("cccc\n");
+	b1 += 4;
 	if (DMA1_Stream3->CR & (1 << 19)) {
 		memcpy(wavsram + BUFFSIZE * record_index * 4, i2srecbuf1,
 				sizeof(i2srecbuf1));
@@ -208,7 +215,7 @@ void rec_i2s_dma_rx_callback(void) {
 				sizeof(i2srecbuf2));
 	}
 	record_index += 1;
-	if (record_index >= 2)
+	if (record_index >= 3)
 		record_index = 0;
 
 }
@@ -263,10 +270,27 @@ static void tcp_err2(void *arg, err_t err) {
 //}
 
 void send_poolsize(int index) {
+
+	//uint8_t *payload_data = (uint8_t *)p->payload;
+	//uint8_t second_element = payload_data[2]
+
+	printf("-----\n");
+
+//	if(recv_index-play_index>6){
+//		compensation=0;
+//	}else{
+//		compensation=6-(recv_index-play_index);
+//		if(compensation>6)compensation=6;
+//		printf("compensatin %d\n",compensation);
+//	}
 	esTx->p = pbuf_alloc(PBUF_RAW, BUFFSIZE, PBUF_POOL);
 	if (esTx->p != NULL) {
 		//	pbuf_take(esTx->p, wavsram, BUFFSIZE);
 		pbuf_take(esTx->p, wavsram + BUFFSIZE * index, BUFFSIZE);
+
+//		uint8_t *payload_data = (uint8_t *)esTx->p->payload;
+//			payload_data[1]=compensation;
+
 		tcp_client_send(pcbTx, esTx);
 		pbuf_free(esTx->p);
 	}
@@ -336,8 +360,6 @@ void tcp_client_init(void) {
 	I2S_Play_Start();
 	I2S_Rec_Start();
 
-
-
 //	__WaveHeader *wavhead = (__WaveHeader*) malloc(sizeof(__WaveHeader ));
 //	recoder_wav_init(wavhead);
 //	f_open(&file, file_name2, (FA_CREATE_ALWAYS | FA_WRITE));
@@ -390,8 +412,6 @@ static err_t tcp_client_connected(void *arg, struct tcp_pcb *newpcb, err_t err) 
 		tcp_sent(newpcb, tcp_client_sent);
 		/* handle the TCP data */
 		tcp_client_handle(newpcb, es);
-		 Audio_Player_Start();
-
 
 		ret_err = ERR_OK;
 	} else {
@@ -445,40 +465,40 @@ static err_t tcp_client_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p,
 		//	printf(" resend no %d\r\n",resend_no);
 		// tcp_sent has already been initialized in the beginning.
 //    /* initialize LwIP tcp_sent callback function */
-//    tcp_sent(tpcb, tcp_client_sent);
-		//printf("ldld %d\n",resend_no);
-		//printf("1111------->\n");
-		//f_read(&wavfile, wavsram,BUFFSIZE,(void *)&write);
-
-		if(server_index>=1000){
-			server_index=0;
+		tcp_recved(tpcb, p->tot_len);
+		if (recv_index == 6) {
+			Audio_Player_Start();
+			first_pack = 0;
 		}
-		memcpy(recvsram+server_index*970,p->payload,p->tot_len);
-		server_index+=1;
 
-//		while (a1 > b1) {
-//			HAL_Delay(10);
-//		}
+		if (server_index >= 1000) {
+			server_index = 0;
+		}
+		memcpy(recvsram + server_index * 970, p->payload, p->tot_len);
+		//uint8_t *payload_data = (uint8_t *)p->payload;
+		//uint8_t second_element = payload_data[2];
+		//printf("%d %d\n",recv_index,second_element);
+		recv_index += 1;
+		server_index += 1;
+		if (compensation == 0) {
+			send_poolsize(current_index);
+			current_index += 1;
+			if (current_index == current_end) {
+				if (record_index == 0) {
+					current_index = 8;
+					current_end = current_index + 4;
+				} else {
+					current_index = (record_index - 1) * 4;
+					current_end = current_index + 4;
+				}
 
-//		while(server_index-wav_index>6){
-//		HAL_Delay(5);
-//		}
-
-
-		send_poolsize(current_index);
-		a1 += 1;
-		current_index += 1;
-		if (current_index == current_end) {
-			if (record_index == 0) {
-				current_index = 8;
-				current_end = current_index + 4;
-			} else {
-				current_index = (record_index - 1) * 4;
-				current_end = current_index + 4;
-				printf("====%d,%d,%d\n", current_index, current_end,
-						record_index);
 			}
 
+		}
+
+		else {
+
+			compensation--;
 		}
 
 //		if((server_index>1000)||(server_index<0)){
@@ -487,7 +507,6 @@ static err_t tcp_client_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p,
 //		}
 
 		/* Acknowledge the received data */
-		tcp_recved(tpcb, p->tot_len);
 
 		/* handle the received data */
 		pbuf_free(p);
