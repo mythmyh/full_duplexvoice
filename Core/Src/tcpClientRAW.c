@@ -205,7 +205,7 @@ int play_index = 0;
 char UsbDiskPath2[4] = { 0 };
 void rec_i2s_dma_rx_callback(void) {
 
-	printf("cccc\n");
+//	printf("cccc\n");
 	b1 += 4;
 	if (DMA1_Stream3->CR & (1 << 19)) {
 		memcpy(wavsram + BUFFSIZE * record_index * 4, i2srecbuf1,
@@ -274,22 +274,22 @@ void send_poolsize(int index) {
 	//uint8_t *payload_data = (uint8_t *)p->payload;
 	//uint8_t second_element = payload_data[2]
 
-	printf("-----\n");
+	//printf("-----\n");
 
-//	if(recv_index-play_index>6){
-//		compensation=0;
-//	}else{
-//		compensation=6-(recv_index-play_index);
-//		if(compensation>6)compensation=6;
-//		printf("compensatin %d\n",compensation);
-//	}
+	if(recv_index-play_index>=6){
+		compensation=0;
+	}else{
+		compensation=6-(recv_index-play_index);
+		if(compensation>6)compensation=6;
+		printf("compensatin %d\n",compensation);
+	}
 	esTx->p = pbuf_alloc(PBUF_RAW, BUFFSIZE, PBUF_POOL);
 	if (esTx->p != NULL) {
 		//	pbuf_take(esTx->p, wavsram, BUFFSIZE);
 		pbuf_take(esTx->p, wavsram + BUFFSIZE * index, BUFFSIZE);
 
-//		uint8_t *payload_data = (uint8_t *)esTx->p->payload;
-//			payload_data[1]=compensation;
+		uint8_t *payload_data = (uint8_t *)esTx->p->payload;
+			payload_data[1]=compensation;
 
 		tcp_client_send(pcbTx, esTx);
 		pbuf_free(esTx->p);
@@ -466,7 +466,7 @@ static err_t tcp_client_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p,
 		// tcp_sent has already been initialized in the beginning.
 //    /* initialize LwIP tcp_sent callback function */
 		tcp_recved(tpcb, p->tot_len);
-		if (recv_index == 6) {
+		if (recv_index == 1) {
 			Audio_Player_Start();
 			first_pack = 0;
 		}
@@ -475,12 +475,9 @@ static err_t tcp_client_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p,
 			server_index = 0;
 		}
 		memcpy(recvsram + server_index * 970, p->payload, p->tot_len);
-		//uint8_t *payload_data = (uint8_t *)p->payload;
-		//uint8_t second_element = payload_data[2];
-		//printf("%d %d\n",recv_index,second_element);
 		recv_index += 1;
 		server_index += 1;
-		if (compensation == 0) {
+	if (compensation == 0) {
 			send_poolsize(current_index);
 			current_index += 1;
 			if (current_index == current_end) {
