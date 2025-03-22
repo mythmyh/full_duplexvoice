@@ -18,9 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "fatfs.h"
 #include "lwip.h"
-#include "usb_host.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -71,8 +69,6 @@ static void MX_I2C2_Init(void);
 static void MX_I2S2_Init(void);
 static void MX_UART5_Init(void);
 static void MX_FSMC_Init(void);
-void MX_USB_HOST_Process(void);
-
 /* USER CODE BEGIN PFP */
 #define BUFFSIZE  970
 /* USER CODE END PFP */
@@ -95,11 +91,7 @@ int fputc(int ch, FILE *f)
   HAL_UART_Transmit(&huart5, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
   return ch;
 }
-extern ApplicationTypeDef Appli_state;
-static FATFS     UsbDiskFatFs;                                 /* File system object for USB disk logical drive */
- FIL       file;                                         /* File object */
- FIL       file2;
-FRESULT   res;
+
 char      UsbDiskPath[4] = {0};                         /* USB Host logical drive path */
 uint32_t  byteswritten, bytesread;                      /* File write/read counts */
 char      file_name[] = "recorder.wav";                     /* File name */
@@ -151,8 +143,6 @@ int main(void)
   MX_I2C1_Init();
   MX_I2C2_Init();
   MX_I2S2_Init();
-  MX_FATFS_Init();
-  MX_USB_HOST_Init();
   MX_UART5_Init();
   MX_LWIP_Init();
   MX_FSMC_Init();
@@ -163,16 +153,14 @@ int main(void)
   	HAL_Delay(1000);
 	WM8978_HPvol_Set(40, 40);	//耳机音量设置
 	WM8978_SPKvol_Set(50);	//喇叭音量设置
-  	WM8978_ADDA_Cfg(0, 1);		//�?????????????????????????????????????启ADC
-  	WM8978_Input_Cfg(1, 1, 0);	//�?????????????????????????????????????启输入�?�道(MIC&LINE IN)
-  	WM8978_Output_Cfg(0, 1);		//�?????????????????????????????????????启BYPASS输出
+  	WM8978_ADDA_Cfg(0, 1);		//�???????????????????????????????????????启ADC
+  	WM8978_Input_Cfg(1, 1, 0);	//�???????????????????????????????????????启输入�?�道(MIC&LINE IN)
+  	WM8978_Output_Cfg(0, 1);		//�???????????????????????????????????????启BYPASS输出
   	WM8978_MIC_Gain(46);		//MIC增益设置
   	WM8978_I2S_Cfg(2, 0);//
   //ETX_MSC_ProcessUsbDevice();
 
-  while( Appli_state !=APPLICATION_READY){
-	    MX_USB_HOST_Process();
-  }
+
 //  res = f_mount( &UsbDiskFatFs, (TCHAR const*)UsbDiskPath, 0 );
 //  printf("mount %d\n",res);
 //  res = f_open( &file, file_name, FA_READ );
@@ -191,7 +179,6 @@ int main(void)
   while (1)
   {
     /* USER CODE END WHILE */
-    //MX_USB_HOST_Process();
 
     /* USER CODE BEGIN 3 */
 	  MX_LWIP_Process();
@@ -446,7 +433,7 @@ static void MX_DMA_Init(void)
   HAL_NVIC_SetPriority(DMA1_Stream4_IRQn, 2, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream4_IRQn);
   /* DMA1_Stream5_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 2, 0);
+  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 6, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
 
 }

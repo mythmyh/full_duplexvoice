@@ -57,7 +57,6 @@
 #include "tcpClientRAW.h"
 #include "i2s.h"
 #include <stdio.h>
-#include "fatfs.h"
 #include <string.h>
 #include "lwip/tcp.h"
 #include <math.h>
@@ -123,7 +122,7 @@ typedef struct {
 	ChunkDATA data;	//data¿é
 } __WaveHeader;
 
-UINT bw;
+
 int file_index = 0;
 
 /* USER CODE END PM */
@@ -186,20 +185,18 @@ int record_direction = 1;
 uint8_t i2srecbuf1[BUFFSIZE * 4];
 uint16_t i2splaybuf[2] = { 0X0000, 0X0000 };
 uint8_t i2srecbuf2[BUFFSIZE * 4];
-uint8_t recvsram[1024000] __attribute__((section(".sram")));
+//uint8_t recvsram[1024000] __attribute__((section(".sram")));
+uint8_t recvsram[34920];
+
 extern uint8_t wavsram[11640];
 //uint8_t wavsram[970 * 21];
 extern int wav_index;
 extern int start;
 int start = 0;
-FRESULT res2; /* FatFs function common result code */
 uint32_t bytesread;
 uint32_t write;
-FATFS UsbDiskFatFs2;
 int all_index = 0;
 int first_pack = 1;
-FIL file;
-FIL wavfile;
 int compensation = 0;
 int play_index = 0;
 char UsbDiskPath2[4] = { 0 };
@@ -343,7 +340,7 @@ void tcp_client_init(void) {
 
 	/* 2. Connect to the server */
 	ip_addr_t destIPADDR;
-	IP_ADDR4(&destIPADDR, 192, 168, 1, 7);
+	IP_ADDR4(&destIPADDR, 192, 168, 1, 28);
 	//while(ok!= ERR_OK)
 
 	tcp_connect(tpcb, &destIPADDR, 12345, tcp_client_connected);
@@ -471,7 +468,7 @@ static err_t tcp_client_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p,
 			first_pack = 0;
 		}
 
-		if (server_index >= 1000) {
+		if (server_index >= 36) {
 			server_index = 0;
 		}
 		memcpy(recvsram + server_index * 970, p->payload, p->tot_len);

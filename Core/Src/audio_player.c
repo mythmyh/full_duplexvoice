@@ -9,7 +9,6 @@
 #include <string.h>
 #include "datas.h"
 
-#include "fatfs.h"
 //#include "integer.h"
 #include "audio_player.h"
 #define USEI2C hi2c2
@@ -25,8 +24,6 @@ extern I2C_HandleTypeDef hi2c1;
 extern I2S_HandleTypeDef hi2s2;
 extern DMA_HandleTypeDef hdma_spi2_tx;
 
-extern FIL file;
-extern FIL file2;
 extern DMA_HandleTypeDef hdma_sdio_rx;
 extern DMA_HandleTypeDef hdma_sdio_tx;
 
@@ -40,7 +37,6 @@ uint8_t *Delta = NULL;
 
 static uint32_t DataLength = 0;
 static uint8_t *DataAddress = NULL;
-FRESULT res2;
 uint32_t bw;
 uint32_t bw2;
 int i;
@@ -135,19 +131,9 @@ void WAV_FileInit(void) {
 }
 uint32_t WAV_FileRead4(uint8_t *buf, uint32_t size) {
 	bw = 0;
-	f_read(&file, buf, size, (void*)&bw); //16bit音频,直接读取数据
+	//f_read(&file, buf, size, (void*)&bw); //16bit音频,直接读取数据
 	printf("aaaa %d\n",bw);
 
-	if (bw < BUFFER_SIZE) //不够数据了,补充0
-	{
-		for (i = bw; i < BUFFER_SIZE - bw; i++)
-			buf[i] = 0;
-
-		f_close(&file);
-
-		return 0;
-
-	}
 	return 1;
 }
 
@@ -161,31 +147,19 @@ uint32_t WAV_FileRead2(uint8_t *buf, uint32_t size) {
 //	wav_index=server_index-=1;
 //	if(server_index==0)wav_index=999;
 //
-//	memcpy(buf, recvsram+(wav_index*size), size);
-	//printf("%d %d\n",server_index,wav_index);
 	memcpy(buf, recvsram+(wav_index*size), size);
+	//printf("%d %d\n",server_index,wav_index);
+	//memcpy(buf, recvsram+(wav_index*size), size);
 			wav_index+=1;
 			play_index+=1;
-			if(wav_index>=1000)wav_index=0;
+			if(wav_index>=36)wav_index=0;
 			return 1;
 }
 
 
 uint32_t WAV_FileRead3(uint8_t *buf, uint32_t size) {
 	bw2 = 0;
-	res2=f_read(&file2, buf, size, (void*)&bw2); //16bit音频,直接读取数据
-	printf("aaaa %d %d\n",res2,bw2);
 
-	if (bw2 < BUFFER_SIZE) //不够数据了,补充0
-	{
-		for (i = bw; i < BUFFER_SIZE - bw2; i++)
-			buf[i] = 0;
-
-		f_close(&file2);
-
-		return 0;
-
-	}
 	return 1;
 }
 
