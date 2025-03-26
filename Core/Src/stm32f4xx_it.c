@@ -204,7 +204,6 @@ void SysTick_Handler(void)
   * @brief This function handles DMA1 stream4 global interrupt.
   */
 
-
 /**
   * @brief This function handles DMA1 stream5 global interrupt.
   */

@@ -46,7 +46,7 @@ extern int server_index;
 extern int compensation;
 extern int play_index;
 
-extern uint8_t recvsram[1024000];
+extern uint8_t recvsram[34920];
 static uint16_t WM8978_REGVAL_TBL[58]=
 {
 	0X0000,0X0000,0X0000,0X0000,0X0050,0X0000,0X0140,0X0000,

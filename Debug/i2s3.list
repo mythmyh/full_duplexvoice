@@ -31,9 +31,9 @@ Idx Name          Size      VMA       LMA       File off  Algn
                   CONTENTS
  13 .ARM.attributes 00000030  00000000  00000000  000a00f4  2**0
                   CONTENTS, READONLY
- 14 .debug_info   00039604  00000000  00000000  000a0124  2**0
+ 14 .debug_info   00039602  00000000  00000000  000a0124  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
- 15 .debug_abbrev 000070cf  00000000  00000000  000d9728  2**0
+ 15 .debug_abbrev 000070cf  00000000  00000000  000d9726  2**0
                   CONTENTS, READONLY, DEBUGGING, OCTETS
  16 .debug_aranges 00001b08  00000000  00000000  000e07f8  2**3
                   CONTENTS, READONLY, DEBUGGING, OCTETS
@@ -2666,16 +2666,16 @@ int main(void)
 	WM8978_SPKvol_Set(50);	//喇叭音量设置
  800144c:	2032      	movs	r0, #50	; 0x32
  800144e:	f7ff fb1f 	bl	8000a90 <WM8978_SPKvol_Set>
-  	WM8978_ADDA_Cfg(0, 1);		//�???????????????????????????????????????启ADC
+  	WM8978_ADDA_Cfg(0, 1);		//�????????????????????????????????????????启ADC
  8001452:	2101      	movs	r1, #1
  8001454:	2000      	movs	r0, #0
  8001456:	f7ff fb3f 	bl	8000ad8 <WM8978_ADDA_Cfg>
-  	WM8978_Input_Cfg(1, 1, 0);	//�???????????????????????????????????????启输入�?�道(MIC&LINE IN)
+  	WM8978_Input_Cfg(1, 1, 0);	//�????????????????????????????????????????启输入�?�道(MIC&LINE IN)
  800145a:	2200      	movs	r2, #0
  800145c:	2101      	movs	r1, #1
  800145e:	2001      	movs	r0, #1
  8001460:	f7ff fba9 	bl	8000bb6 <WM8978_Input_Cfg>
-  	WM8978_Output_Cfg(0, 1);		//�???????????????????????????????????????启BYPASS输出
+  	WM8978_Output_Cfg(0, 1);		//�????????????????????????????????????????启BYPASS输出
  8001464:	2101      	movs	r1, #1
  8001466:	2000      	movs	r0, #0
  8001468:	f7ff f8f7 	bl	800065a <WM8978_Output_Cfg>
@@ -3503,14 +3503,14 @@ static void MX_FSMC_Init(void)
  800191c:	2200      	movs	r2, #0
  800191e:	645a      	str	r2, [r3, #68]	; 0x44
   /* Timing */
-  Timing.AddressSetupTime = 1;
- 8001920:	2301      	movs	r3, #1
+  Timing.AddressSetupTime =3;
+ 8001920:	2303      	movs	r3, #3
  8001922:	607b      	str	r3, [r7, #4]
   Timing.AddressHoldTime = 15;
  8001924:	230f      	movs	r3, #15
  8001926:	60bb      	str	r3, [r7, #8]
-  Timing.DataSetupTime = 7;
- 8001928:	2307      	movs	r3, #7
+  Timing.DataSetupTime = 8;
+ 8001928:	2308      	movs	r3, #8
  800192a:	60fb      	str	r3, [r7, #12]
   Timing.BusTurnAroundDuration = 0;
  800192c:	2300      	movs	r3, #0
